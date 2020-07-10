@@ -1,0 +1,116 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+
+
+  # vars_files:
+  #   - "vars/creds.json"
+
+  roles:
+    - role: "avinetworks.avisdk"
+
+  tasks:
+
+
+    # - name: Debug
+    #   debug:
+    #     msg: "{{ avi_credentials }}"
+    #   tags:
+    #     - debug
+
+
+    - name: delete a file (or symlink) if it exists
+      file:
+        path: "{{ zone }}.csv"
+        state: absent
+
+    - name: create an empty file if it doesn't exist
+      file:
+        path: "{{ zone }}.csv"
+        state: touch
+
+    - name: Gather Avi Users
+      avi_api_session:
+        avi_credentials: "{{ avi_credentials }}"
+        api_version: "{{ avi_credentials.api_version }}"
+        http_method: get
+        timeout: 300
+        path: useractivity
+        tenant: "{{ tenant_ref | default('admin') }}"
+        params:
+          page_size: -1
+      register: statusUseractivity
+
+    # - name: Debug
+    #   debug:
+    #     msg: "{{ statusUseractivity.obj.results }}"
+    #   tags:
+    #     - debug
+
+    - name: Append users in the list except admin
+      set_fact:
+        userList: "{{ (userList | default([])) + [item] }}"
+      loop: "{{ statusUseractivity.obj.results }}"
+      loop_control:
+       label: "{{ item.name }}"
+      when: item.name != "admin"
+
+    # - name: Debug
+    #   debug:
+    #     msg: "{{ userList | length }}"
+    #   tags:
+    #     - debug
+
+    # - name: Sorting the list
+    #   set_fact:
+    #     sortedList: "{{ (sortedList | default([])) + [item.name + ] }}"
+    #   loop: "{{ userList }}"
+    #   loop_control:
+    #    label: "{{ item.name }}"
+    #   when: item.last_login_timestamp is defined
+
+    # - name: Debug
+    #   debug:
+    #     msg: "{{ item.name }}"
+    #   loop: "{{ userList }}"
+    #   loop_control:
+    #    label: "{{ item.name }}"
+    #   when: item.last_login_timestamp is defined
+    #   tags:
+    #     - debug
+
+    # - name: Append users in the list who did sign in
+    #   set_fact:
+    #     finalCsv: "{{ (finalCsv | default([])) + ['name' + ';signedin;' + 'zone'] }}"
+
+    - name: Append users in the list who did sign in
+      set_fact:
+        finalCsv: "{{ (finalCsv | default([])) + [item.name + ';True;' + zone ] }}"
+      loop: "{{ userList }}"
+      loop_control:
+       label: "{{ item.name }}"
+      when: item.last_login_timestamp is defined
+      tags:
+        - debug
+
+    - name: Append users in the list who didn't sign in
+      set_fact:
+        finalCsv: "{{ (finalCsv | default([])) + [item.name + ';False;' + zone ] }}"
+      loop: "{{ userList }}"
+      loop_control:
+       label: "{{ item.name }}"
+      when: item.last_login_timestamp is not defined
+      tags:
+        - debug
+
+    # - name: Debug
+    #   debug:
+    #     msg: "{{ item }}"
+    #   loop: "{{ finalCsv }}"
+
+    - name: Dump to file
+      lineinfile:
+        line: "{{ item }}"
+        path: "{{ zone }}.csv"
+      loop: "{{ finalCsv }}"
