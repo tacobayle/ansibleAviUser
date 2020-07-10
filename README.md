@@ -10,7 +10,7 @@ Gather Avi User and generate a csv file
 pip install avisdk
 ansible-galaxy install -f avinetworks.avisdk
 ```
-3. Make sure you can reach your Avi Controller
+3. Make sure you can reach your Avi Controllers
 
 ## Environment:
 Playbook(s) has/have been tested against:
@@ -45,7 +45,7 @@ Avi 18.2.8
 
 
 ## Use the ansible playbook to:
-1. Gather Abi Users
+1. Gather Avi Users
 2. Remove admin user
 3. Create a csv file - attendees.csv - (column 1: name, Column2: signed-in or not (true or false), Column3: zone)
 
