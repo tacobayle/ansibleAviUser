@@ -47,7 +47,10 @@ Avi 18.2.8
 ## Use the ansible playbook to:
 1. Gather Avi Users
 2. Remove admin user
-3. Create a csv file - attendees.csv - (column 1: name, Column2: signed-in or not (true or false), Column3: zone)
+3. Remove duplicate for SignedIn
+4. Remove duplicate for NotSignedIn
+5. Create a csv file - attendees.csv - (column 1: name, Column2: signed-in or not (true or false))
+6. Remove duplicate - keep the SignedIn if conflicts.
 
 ## Run the script:
 ./user.sh

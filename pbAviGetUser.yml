@@ -19,15 +19,14 @@
     #   tags:
     #     - debug
 
-
-    - name: delete a file (or symlink) if it exists
+    - name: create an empty file if it doesn't exist
       file:
-        path: "{{ zone }}.csv"
-        state: absent
+        path: "{{ zone }}SignedIn.csv"
+        state: touch
 
     - name: create an empty file if it doesn't exist
       file:
-        path: "{{ zone }}.csv"
+        path: "{{ zone }}NotSignedIn.csv"
         state: touch
 
     - name: Gather Avi Users
@@ -56,37 +55,9 @@
        label: "{{ item.name }}"
       when: item.name != "admin"
 
-    # - name: Debug
-    #   debug:
-    #     msg: "{{ userList | length }}"
-    #   tags:
-    #     - debug
-
-    # - name: Sorting the list
-    #   set_fact:
-    #     sortedList: "{{ (sortedList | default([])) + [item.name + ] }}"
-    #   loop: "{{ userList }}"
-    #   loop_control:
-    #    label: "{{ item.name }}"
-    #   when: item.last_login_timestamp is defined
-
-    # - name: Debug
-    #   debug:
-    #     msg: "{{ item.name }}"
-    #   loop: "{{ userList }}"
-    #   loop_control:
-    #    label: "{{ item.name }}"
-    #   when: item.last_login_timestamp is defined
-    #   tags:
-    #     - debug
-
-    # - name: Append users in the list who did sign in
-    #   set_fact:
-    #     finalCsv: "{{ (finalCsv | default([])) + ['name' + ';signedin;' + 'zone'] }}"
-
     - name: Append users in the list who did sign in
       set_fact:
-        finalCsv: "{{ (finalCsv | default([])) + [item.name + ';True;' + zone ] }}"
+        userListSignedIn: "{{ (userListSignedIn | default([])) + [item.name + ';True' ] }}"
       loop: "{{ userList }}"
       loop_control:
        label: "{{ item.name }}"
@@ -96,7 +67,7 @@
 
     - name: Append users in the list who didn't sign in
       set_fact:
-        finalCsv: "{{ (finalCsv | default([])) + [item.name + ';False;' + zone ] }}"
+        userListNotSignedIn: "{{ (userListNotSignedIn | default([])) + [item.name + ';False' ] }}"
       loop: "{{ userList }}"
       loop_control:
        label: "{{ item.name }}"
@@ -104,13 +75,14 @@
       tags:
         - debug
 
-    # - name: Debug
-    #   debug:
-    #     msg: "{{ item }}"
-    #   loop: "{{ finalCsv }}"
-
-    - name: Dump to file
+    - name: Dump to file User who signed in
       lineinfile:
         line: "{{ item }}"
-        path: "{{ zone }}.csv"
-      loop: "{{ finalCsv }}"
+        path: "{{ zone }}SignedIn.csv"
+      loop: "{{ userListSignedIn }}"
+
+    - name: Dump to file User who did not sign in
+      lineinfile:
+        line: "{{ item }}"
+        path: "{{ zone }}NotSignedIn.csv"
+      loop: "{{ userListNotSignedIn }}"
